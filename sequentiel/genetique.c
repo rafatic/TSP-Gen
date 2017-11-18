@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <omp.h>
 #include "debug.h"
 #include "genetique.h"
 
@@ -356,7 +355,7 @@ void createNewPopulation(Population* population, int* selectedParents, int nPare
 
 	worstPersons = getWorstPersons(population, nChildrenToAdd);
 
-	#pragma omp parallel for shared(population, worstPersons)
+	//#pragma omp parallel for shared(population, worstPersons)
 	for(i = 0; i < nParents; i = i + 2)
 	{
 		reproduce(&population->persons[selectedParents[i]], &population->persons[selectedParents[i+1]], &children[i], &children[i+1]);
@@ -485,7 +484,7 @@ int* getBestPersons(Person* p, int size, int nPersons)
 
 void mutate(Person* person, int** matriceAdj)
 {
-	/*int indexA, indexB, tmp;
+	int indexA, indexB, tmp;
 
 	indexA = rand() % (person->townCount - 1);
 	indexB = rand() % (person->townCount - 1);
@@ -495,5 +494,5 @@ void mutate(Person* person, int** matriceAdj)
 	person->hamiltonianWay[indexA] = person->hamiltonianWay[indexB];
 	person->hamiltonianWay[indexB] = tmp;
 
-	person->fitnessValue = evaluate(person, matriceAdj);*/
+	person->fitnessValue = evaluate(person, matriceAdj);
 }

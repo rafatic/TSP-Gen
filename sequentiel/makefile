@@ -1,4 +1,4 @@
-CC = gcc -fopenmp -Wall -O0 -g
+CC = gcc -Wall -O0 -g
 LIBS = -lm
 OBJETS = graphGenetic.o graphTools.o genetique.o geneticAlgo.o
 EXEC= genetic
