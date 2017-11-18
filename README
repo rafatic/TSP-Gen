@@ -1,0 +1,8 @@
+TSP-Gen : A study of the "island model" for distributes Genetic Algorithms.
+
+INSTALLATION :
+-OpenMPI :  sudo apt-get install libopenmpi-dev openmpi-bin
+
+
+
+
