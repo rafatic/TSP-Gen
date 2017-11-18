@@ -10,7 +10,7 @@
  */
 
 /* Set it to 0 to disable debug macros */
-#define DEBUG 1
+#define DEBUG 0
 
 #if __STDC_VERSION__ >= 199901L
 	#define C99
@@ -29,7 +29,7 @@
 	#define PRINT(fmt, ...) \
 			do { fprintf(stderr, fmt "\n", ##__VA_ARGS__); } while (0)
 	#define LOG(fmt, ...) \
-            //do { if (DEBUG) fprintf(stderr, "L: " fmt "\n", ##__VA_ARGS__); } while (0)
+            do { if (DEBUG) fprintf(stderr, "L: " fmt "\n", ##__VA_ARGS__); } while (0)
 	#define ERROR(fmt, ...) \
             do { if (DEBUG) fprintf(stderr, ANSI_COLOR_RED "E: " fmt "\n" ANSI_COLOR_RESET, ##__VA_ARGS__); } while (0)
 	#define SUCCESS(fmt, ...) \

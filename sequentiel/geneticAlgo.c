@@ -2,16 +2,20 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
+#include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <time.h>
+
 #include "debug.h"
 #include "genetique.h"
 #include "graphGenetic.h"
 #include "graphTools.h"
 
-#define NGENERATIONS 5
-#define NPERSON	10
-#define NPARENTS 4
-#define MUTATION_RATE 40
+
+
+
 
 int main(int argc, char *argv[])
 {
@@ -21,27 +25,29 @@ int main(int argc, char *argv[])
 	Person* bestPerson;
 	char* ext;
 	Genetic* genetic;
-	char fileName[80];
+	char fileName[255];
+	clock_t startTime, endTime;
 
-	srand(time(NULL));
+	srand(time(NULL) + getpid());
 	
 
-    if (argc < 2)
+    if (argc < 3)
 	{
 		//ERROR("Invalid arguments. The command must be under the following form : commandName <program> <graph_file_path>.txt|.tsp <population_size> <generation_count> <parents_count> <mutation_rate>");
-		ERROR("Invalid arguments. The command must be under the following form : commandName <program> <graph_file_path> (*.txt|*.tsp");
+		ERROR("Invalid arguments. The command must be under the following form : commandName <program> <graph_file_path> (*.txt|*.tsp <configuration file>");
 		exit(1);
 	}
 	ext = strrchr(argv[1], '.');
 	LOG("%s file detected.", ext);
 
-	strcpy(fileName, "param.cfg");
+	LOG("%s configuration detected.", argv[2]);
+	strcpy(fileName, argv[2]);
 
 	genetic = configureAlgorithm(fileName);
-	printf("nGenerations : %d\n", genetic->nGenerations);
+	/*printf("nGenerations : %d\n", genetic->nGenerations);
 	printf("nPersons : %d\n", genetic->nPersons);
 	printf("nParents : %d\n", genetic->nParents);
-	printf("mutationRate : %d\n", genetic->mutationRate);
+	printf("mutationRate : %d\n", genetic->mutationRate);*/
 
 	
 
@@ -61,6 +67,8 @@ int main(int argc, char *argv[])
 	selectedParents = (int*) malloc(genetic->nParents * sizeof(int));
 	population = populate(genetic->nPersons, graph->nSommets, graph->matriceAdj);
 
+	startTime = clock();
+
 	
 	for(i=0; i < genetic->nGenerations; i ++)
 	{
@@ -78,13 +86,19 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+	endTime = clock();
+
+	//printf("Best result :\n");
+	//showPerson(*bestPerson);
+
+	//printf("Exec time : %ldms\n", endTime - startTime);
+
+	//csv format
+	printf("%d, %ld\n", bestPerson->fitnessValue, endTime - startTime);
+
+	freePopulation(population);
+	free(selectedParents);
 	
-
-	printf("Best result :\n");
-	showPerson(*bestPerson);
-
-	//freePopulation(population);
-	//free(selectedParents);
 
 	exit(0);
 }
