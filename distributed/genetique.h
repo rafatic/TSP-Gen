@@ -1,7 +1,9 @@
 #ifndef GENETIQUE__H
 #define GENETIQUE__H
 
+#include <mpi.h>
 #include "graphGenetic.h"
+
 
 typedef struct __geneticAlgorithm {
 	int nPersons;
@@ -22,6 +24,8 @@ typedef struct __population {
 	int size;
 	Person* persons;
 } Population;
+
+MPI_Datatype MPI_PersonType;
 
 Genetic* configureAlgorithm(char* fileName);
 Population* populate(int popSize, int nEdges, int** matriceAdj);
@@ -47,4 +51,5 @@ int* sortPersonsByWorst(Population* population);
 
 void mutate(Person* person, int** matriceAdj);
 
+void defineMPI_TypePerson(MPI_Datatype* newType);
 #endif

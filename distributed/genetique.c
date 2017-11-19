@@ -543,3 +543,12 @@ void mutate(Person* person, int** matriceAdj)
 
 	person->fitnessValue = evaluate(person, matriceAdj);
 }
+
+void defineMPI_TypePerson(MPI_Datatype* newType)
+{
+	Person tmp[2];
+	MPI_Aint extent = &tmp[1] - &tmp[0];
+
+	MPI_Type_create_resized(MPI_2INT, 0, extent, newType);
+	MPI_Type_commit(newType);
+}

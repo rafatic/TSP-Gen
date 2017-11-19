@@ -10,7 +10,7 @@
  */
 
 /* Set it to 0 to disable debug macros */
-#define DEBUG 1
+#define DEBUG 0
 
 #if __STDC_VERSION__ >= 199901L
 	#define C99
