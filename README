@@ -3,6 +3,37 @@ TSP-Gen : A study of the "island model" for distributed Genetic Algorithms.
 INSTALLATION :
 -OpenMPI :  sudo apt-get install libopenmpi-dev openmpi-bin
 
+EXECUTION
+
+-Sequential version :
+	Go to TSP-Gen/sequentiel
+	make
+	The executable "genetic" will be created
+
+	There is two ways to execute the program
+		- manually :
+			./genetic <dataFile> <configFile>
+			example : ./genetic ../data/graphe4.txt ../configurations/param.cfg
+		- via a shell script :
+			go to to TSP-Gen/
+			./sequentialExecutor.sh <N>
+				N represents the number of execution you want
+				The script will executre N times the program with a predetermined data file 
+				for each configuration file in the configurations folder
+
+			The output result will be written to the "result" file.
+
+-Distributed version :
+	Go to TSP-Gen/distributed
+	make
+	The executable "genetic" will be created
+
+	mpirun -c <N> ./genetic <dataFile> <configFile>
+	example : mpirun -c 2 ./genetic ../data/graphe4.txt ../configurations/param.cfg
+	N represents the number of processes that will be used during the execution
+
+
+
 
 
 
