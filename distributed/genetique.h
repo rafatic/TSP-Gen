@@ -44,9 +44,9 @@ void freePopulation(Population* p);
 
 int isUnique(int* t, int size, int index);
 
-void createNewPopulation(Population* population, int* selectedParents, int nParents, int** matriceAdj, int mutationRate);
+void createNewPopulation(Population* population, int* selectedParents, int** matriceAdj, Genetic* configuration, int generationNumber);
 int* getWorstPersons(Population* population, int nPersons);
-int* getBestPersons(Person* p, int size, int nPersons);
+int* getBestPersons(Population* population, int nPersons);
 int* sortPersonsByWorst(Population* population);
 
 void mutate(Person* person, int** matriceAdj);

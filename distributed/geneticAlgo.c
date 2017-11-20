@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 	{
 		selection(population, genetic->nParents, selectedParents);
 
-		createNewPopulation(population, selectedParents, genetic->nParents, graph->matriceAdj, genetic->mutationRate);
+		createNewPopulation(population, selectedParents, graph->matriceAdj, genetic, i);
 
 		for (j = 0; j < population->size; j++)
 		{
@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 				bestFitnessValue = bestPerson->fitnessValue;
 			}
 		}
+
 	}
 	
 	endTime = clock();
@@ -134,11 +135,15 @@ int main(int argc, char *argv[])
 	else
 	{
 		reducedPersons[0] = *bestPerson;
-		for(i = 1; i < p; i++)
+		if(p > 1)
 		{
-			MPI_Recv(&reducedPersons[i], 1, MPI_PersonType, i, MSG_BESTPERSON, MPI_COMM_WORLD, &status);
-			MPI_Recv(reducedPersons[i].hamiltonianWay, reducedPersons[i].townCount, MPI_INT, i, MSG_BESTPERSON_WAY, MPI_COMM_WORLD, &status);
+			for(i = 1; i < p; i++)
+			{
+				MPI_Recv(&reducedPersons[i], 1, MPI_PersonType, i, MSG_BESTPERSON, MPI_COMM_WORLD, &status);
+				MPI_Recv(reducedPersons[i].hamiltonianWay, reducedPersons[i].townCount, MPI_INT, i, MSG_BESTPERSON_WAY, MPI_COMM_WORLD, &status);
+			}	
 		}
+		
 
 		for(i = 0; i < p; i++)
 		{

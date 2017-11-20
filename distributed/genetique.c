@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <mpi.h>
 #include "debug.h"
 #include "genetique.h"
 
+#define MSG_MIGRANT 3
+#define MSG_MIGRANT_WAY 4
 
 Genetic* configureAlgorithm(char* fileName)
 {
@@ -381,17 +384,21 @@ int isUnique(int* t, int size, int index)
 	return unique;
 }
 
-void createNewPopulation(Population* population, int* selectedParents, int nParents, int** matriceAdj, int mutationRate)
+void createNewPopulation(Population* population, int* selectedParents, int** matriceAdj, Genetic* configuration, int generationNumber)
 {
-	int i, nChildrenToAdd = nParents, mutationRoll, numberOfMutations;
-	int *worstPersons;
+	
+	int i, nChildrenToAdd = configuration->nParents, mutationRoll, numberOfMutations, rank, commSize;
+	int *worstPersons, *bestPersons;
 	Person* children = NULL;
-
+	Person* migrants;
+	MPI_Status status;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &commSize);
 
 	// TEMPORARY, NEED TO BE CHECKED DURING INITIALIZATION
-	if(nParents % 2 != 0)
+	if(configuration->nParents % 2 != 0)
 	{
-		nParents--;
+		configuration->nParents--;
 	}
 
 	children = (Person*) malloc(nChildrenToAdd * sizeof(Person));
@@ -402,8 +409,7 @@ void createNewPopulation(Population* population, int* selectedParents, int nPare
 
 	worstPersons = getWorstPersons(population, nChildrenToAdd);
 
-	//#pragma omp parallel for shared(population, worstPersons)
-	for(i = 0; i < nParents; i = i + 2)
+	for(i = 0; i < configuration->nParents; i = i + 2)
 	{
 		reproduce(&population->persons[selectedParents[i]], &population->persons[selectedParents[i+1]], &children[i], &children[i+1]);
 
@@ -416,7 +422,7 @@ void createNewPopulation(Population* population, int* selectedParents, int nPare
 
 
 	mutationRoll = rand() % 100;
-	if(mutationRoll < mutationRate)
+	if(mutationRoll < configuration->mutationRate)
 	{
 		numberOfMutations = rand() % population->size;
 		
@@ -425,6 +431,98 @@ void createNewPopulation(Population* population, int* selectedParents, int nPare
 			mutate(&population->persons[rand()% (population->size - 1)], matriceAdj);
 		}
 	}
+
+	if(configuration->migrationPeriodicity > 0)
+	{
+		if(generationNumber % configuration->migrationPeriodicity == 0)
+		{
+			bestPersons = getBestPersons(population, configuration->nMigrants);
+			
+			/*printf("%d : SENDING PERSONS\n", rank);
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				showPerson(population->persons[bestPersons[i]]);
+			}*/
+
+			
+			
+			
+			//printf("rank : %d\n", rank);
+
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				if(rank == commSize - 1)
+				{
+					//printf("%d sending to : %d\n", rank, 0);
+					MPI_Send(&population->persons[bestPersons[i]], 1, MPI_PersonType, 0, MSG_MIGRANT, MPI_COMM_WORLD);
+					MPI_Send(population->persons[bestPersons[i]].hamiltonianWay, population->persons[bestPersons[i]].townCount, MPI_INT, 0, MSG_MIGRANT_WAY, MPI_COMM_WORLD);
+				}
+				else
+				{
+					//printf("%d sending to : %d\n", rank, rank + 1);
+					MPI_Send(&population->persons[bestPersons[i]], 1, MPI_PersonType, rank + 1, MSG_MIGRANT, MPI_COMM_WORLD);
+					MPI_Send(population->persons[bestPersons[i]].hamiltonianWay, population->persons[bestPersons[i]].townCount, MPI_INT, rank + 1, MSG_MIGRANT_WAY, MPI_COMM_WORLD);
+				}
+
+				
+			}
+
+			worstPersons = getWorstPersons(population, configuration->nMigrants);
+			migrants = (Person*)malloc(configuration->nMigrants * sizeof(Person));
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				migrants[i].hamiltonianWay = (int*)malloc(population->persons[0].townCount * sizeof(int));
+			}
+			/*printf("%d : REPLACING PERSONS\n", rank);
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				showPerson(population->persons[worstPersons[i]]);
+			}*/
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				// if(rank == 0)
+				// {
+
+				// 	printf("%d receiving from %d\n", rank, commSize - 1);
+				// 	MPI_Recv(&population->persons[worstPersons[i]], 1, MPI_PersonType, commSize - 1, MSG_MIGRANT, MPI_COMM_WORLD, &status);
+
+				// 	//printf("size : %ld\n", sizeof(population->persons[worstPersons[i]].hamiltonianWay));
+				// 	MPI_Recv(population->persons[worstPersons[i]].hamiltonianWay, population->persons[worstPersons[i]].townCount, MPI_INT, commSize - 1, MSG_MIGRANT_WAY, MPI_COMM_WORLD, &status);
+				// }
+				// else
+				// {
+				// 	printf("%d receiving from %d\n", rank, rank - 1 );
+				// 	MPI_Recv(&population->persons[worstPersons[i]], 1, MPI_PersonType, rank - 1, MSG_MIGRANT, MPI_COMM_WORLD, &status);	
+
+				// 	//printf("size : %ld\n", sizeof(population->persons[worstPersons[i]].hamiltonianWay));
+				// 	MPI_Recv(population->persons[worstPersons[i]].hamiltonianWay, population->persons[worstPersons[i]].townCount, MPI_INT, rank - 1, MSG_MIGRANT_WAY, MPI_COMM_WORLD, &status);
+				// }
+				if(rank == 0)
+				{
+					MPI_Recv(&migrants[i], 1, MPI_PersonType, commSize - 1, MSG_MIGRANT, MPI_COMM_WORLD, &status);
+
+					//printf("size : %ld\n", sizeof(population->persons[worstPersons[i]].hamiltonianWay));
+					MPI_Recv(migrants[i].hamiltonianWay, migrants[i].townCount, MPI_INT, commSize - 1, MSG_MIGRANT_WAY, MPI_COMM_WORLD, &status);
+				}
+				else
+				{
+					MPI_Recv(&migrants[i], 1, MPI_PersonType, rank - 1, MSG_MIGRANT, MPI_COMM_WORLD, &status);	
+
+					//printf("size : %ld\n", sizeof(population->persons[worstPersons[i]].hamiltonianWay));
+					MPI_Recv(migrants[i].hamiltonianWay, migrants[i].townCount, MPI_INT, rank - 1, MSG_MIGRANT_WAY, MPI_COMM_WORLD, &status);
+				}
+			}
+
+			for(i = 0; i < configuration->nMigrants; i++)
+			{
+				memcpy(&population->persons[worstPersons[i]], &migrants[i], sizeof(Person));
+			}
+		}
+	}
+
+
+
+
 
 }
 
@@ -464,35 +562,43 @@ int* getWorstPersons(Population* population, int nPersons)
 
 	return worstPersons;
 }
-/*int* sortPersonsByWorst(Population* population)
+
+int* getBestPersons(Population* population, int nPersons)
 {
-	int* worstPersons = (int*) malloc(sizeof(int) * population->size);
-	int i, t, sorted;
+	int* bestPersons = (int*) malloc(sizeof(int)* nPersons);
+	int i, j, max = 0, indexMax = 0;
 
 	for (i = 0; i < population->size; i++)
 	{
-		worstPersons[i] = i;
-	}
-
-	while(sorted) {
-		sorted = 0;
-		for(i = 1; i < population->size; i++)
+		bestPersons[i] = i;
+		if(population->persons[bestPersons[i]].fitnessValue > max)
 		{
-			if (population->persons[worstPersons[i]].fitnessValue > population->persons[worstPersons[i-1]].fitnessValue)
-			{
-				t = worstPersons[i];
-				worstPersons[i] = worstPersons[i-1];
-				worstPersons[i-1] = t;
-
-				sorted = 1;
-			}
+			max = population->persons[bestPersons[i]].fitnessValue;
+			indexMax = i;
 		}
 	}
 
-	return worstPersons;
-}*/
+	for (i = population->size; i < nPersons; i++)
+	{
+		if (population->persons[i].fitnessValue < max)
+		{
+			bestPersons[indexMax] = i;
+			max = 0;
+			for(j = 0; j < population->size; j++)
+			{
+				if (population->persons[bestPersons[j]].fitnessValue > max)
+				{
+					max = population->persons[bestPersons[j]].fitnessValue;
+					indexMax = j;
+				}
+			}
+		}
+	}
+	return bestPersons;
 
-int* getBestPersons(Person* p, int size, int nPersons)
+}
+
+/*int* getBestPersons(Person* p, int size, int nPersons)
 {
 	int* bestPersons = (int*) malloc(sizeof(int)* nPersons);
 	int i, j, max, indexMax = 0;
@@ -527,7 +633,7 @@ int* getBestPersons(Person* p, int size, int nPersons)
 	}
 
 	return bestPersons;
-}
+}*/
 
 void mutate(Person* person, int** matriceAdj)
 {
