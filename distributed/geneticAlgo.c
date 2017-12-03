@@ -20,7 +20,7 @@
 
 int main(int argc, char *argv[])
 {
-	int *selectedParents = NULL, i = 0, j, bestFitnessValue = INT_MAX, rank, p;
+	int *selectedParents = NULL, i = 0, j, bestFitnessValue = INT_MAX, rank, p, indexBestPerson;
 	Population* population;
 	graph_genetic_t* graph = NULL;
 	Person *bestPerson, *reducedPersons;
@@ -143,9 +143,20 @@ int main(int argc, char *argv[])
 				MPI_Recv(reducedPersons[i].hamiltonianWay, reducedPersons[i].townCount, MPI_INT, i, MSG_BESTPERSON_WAY, MPI_COMM_WORLD, &status);
 			}	
 		}
-		
 
-		for(i = 0; i < p; i++)
+		indexBestPerson = 0;
+
+		for(i = 1; i < p; i++)
+		{
+			if(reducedPersons[i].fitnessValue < reducedPersons[indexBestPerson].fitnessValue)
+			{
+				indexBestPerson = i;
+			}
+		}
+
+		printf("%d, %d\n", indexBestPerson, reducedPersons[indexBestPerson].fitnessValue);
+
+		/*for(i = 0; i < p; i++)
 		{
 			printf("%d, %d, ", i, reducedPersons[i].fitnessValue);
 
@@ -154,7 +165,7 @@ int main(int argc, char *argv[])
 				printf("%d ", reducedPersons[i].hamiltonianWay[j]);
 			}
 			printf("\n");
-		}
+		}*/
 		
 	}
 

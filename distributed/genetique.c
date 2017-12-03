@@ -432,7 +432,7 @@ void createNewPopulation(Population* population, int* selectedParents, int** mat
 		}
 	}
 
-	if(configuration->migrationPeriodicity > 0)
+	if(configuration->migrationPeriodicity > 0 && commSize > 1)
 	{
 		if(generationNumber % configuration->migrationPeriodicity == 0)
 		{
@@ -448,7 +448,7 @@ void createNewPopulation(Population* population, int* selectedParents, int** mat
 			
 			
 			//printf("rank : %d\n", rank);
-
+			
 			for(i = 0; i < configuration->nMigrants; i++)
 			{
 				if(rank == commSize - 1)
@@ -456,6 +456,7 @@ void createNewPopulation(Population* population, int* selectedParents, int** mat
 					//printf("%d sending to : %d\n", rank, 0);
 					MPI_Send(&population->persons[bestPersons[i]], 1, MPI_PersonType, 0, MSG_MIGRANT, MPI_COMM_WORLD);
 					MPI_Send(population->persons[bestPersons[i]].hamiltonianWay, population->persons[bestPersons[i]].townCount, MPI_INT, 0, MSG_MIGRANT_WAY, MPI_COMM_WORLD);
+
 				}
 				else
 				{
@@ -467,17 +468,18 @@ void createNewPopulation(Population* population, int* selectedParents, int** mat
 				
 			}
 
+
 			worstPersons = getWorstPersons(population, configuration->nMigrants);
 			migrants = (Person*)malloc(configuration->nMigrants * sizeof(Person));
 			for(i = 0; i < configuration->nMigrants; i++)
 			{
 				migrants[i].hamiltonianWay = (int*)malloc(population->persons[0].townCount * sizeof(int));
 			}
-			/*printf("%d : REPLACING PERSONS\n", rank);
-			for(i = 0; i < configuration->nMigrants; i++)
-			{
-				showPerson(population->persons[worstPersons[i]]);
-			}*/
+			// printf("%d : REPLACING PERSONS\n", rank);
+			// for(i = 0; i < configuration->nMigrants; i++)
+			// {
+			// 	showPerson(population->persons[worstPersons[i]]);
+			// }
 			for(i = 0; i < configuration->nMigrants; i++)
 			{
 				// if(rank == 0)
@@ -568,7 +570,7 @@ int* getBestPersons(Population* population, int nPersons)
 	int* bestPersons = (int*) malloc(sizeof(int)* nPersons);
 	int i, j, max = 0, indexMax = 0;
 
-	for (i = 0; i < population->size; i++)
+	for (i = 0; i < nPersons; i++)
 	{
 		bestPersons[i] = i;
 		if(population->persons[bestPersons[i]].fitnessValue > max)
@@ -578,13 +580,14 @@ int* getBestPersons(Population* population, int nPersons)
 		}
 	}
 
-	for (i = population->size; i < nPersons; i++)
+	//for (i = population->size; i < nPersons; i++)
+	for (i = nPersons; i < population->size; i++)
 	{
 		if (population->persons[i].fitnessValue < max)
 		{
 			bestPersons[indexMax] = i;
 			max = 0;
-			for(j = 0; j < population->size; j++)
+			for(j = 0; j < nPersons; j++)
 			{
 				if (population->persons[bestPersons[j]].fitnessValue > max)
 				{
